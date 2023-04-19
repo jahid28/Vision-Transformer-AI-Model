@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>V-transformer</title>
+</head>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        display: grid;
+        place-items: center;
+    }
+
+    h1 {
+        font-size: 4rem;
+    }
+
+    p {
+        font-size: 2rem;
+    }
+
+    button {
+        font-size: 1.5rem;
+        padding: 5px;
+        border-radius: 10px;
+        border: none;
+        background-color: rgb(90, 166, 228);
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: rgb(181, 219, 252);
+    }
+
+    @media (max-width:500px) {
+        h1 {
+            font-size: 2rem;
+        }
+
+        p {
+            font-size: 1.5rem;
+        }
+
+    }
+</style>
+
+
+<body>
+    <br><br>
+    <h1>Hugging Pics Practice</h1>
+    <h1>Dog Breed Finder</h1>
+    <br><br>
+    <p>Select an Image : </p>
+    <br>
+    <input type="file" id="imageInput" accept="image/*">
+    <br><br>
+    <img id="preview" src="#" alt="Selected Image" style="max-width: 300px;">
+    <br><br>
+    <p id="load">Loading 0%</p>
+    <br><br>
+    <h2 id="result"></h2>
+
+    <script>
+        let url
+        let token
+        fetch('./config.json')
+            .then(response => response.json())
+            .then(config => {
+                url = config.url;
+                token = config.token;
+            });
+           
+
+        document.getElementById('load').style.display = 'none'
+        document.getElementById('preview').style.display = 'none'
+
+
+        let progress = 0;
+
+
+        document.getElementById('imageInput').addEventListener('change', (event) => {
+            let max = 0
+            let dog
+
+            document.getElementById('result').style.display = 'none'
+            document.getElementById('load').style.display = 'block'
+            document.getElementById('load').innerText = 'Loading 20%'
+
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.addEventListener('load', () => {
+                document.getElementById('preview').setAttribute('src', reader.result);
+                document.getElementById('preview').style.display = 'block'
+
+            });
+            reader.readAsDataURL(file);
+            reader.onloadend = () => {
+                const data = {
+                    inputs: {
+                        image: reader.result.split(',')[1]
+                    }
+                };
+
+                document.getElementById('load').innerText = 'Loading 40%'
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data)
+                        document.getElementById('load').innerText = 'Loading 60%'
+
+                        for (i = 0; i < data.length; i++) {
+                            if (data[i].score > max) {
+                                max = data[i].score
+                                dog = data[i].label
+                            }
+                        }
+                        document.getElementById('load').innerText = 'Loading 100%'
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        alert('Something went wrong')
+                    })
+                    .finally(() => {
+                        document.getElementById('load').style.display = 'none'
+
+                        if (dog == undefined) {
+                            alert("Please try again in 20 seconds")
+                        }
+                        else {
+                            document.getElementById('result').style.display = 'block'
+
+                            document.getElementById('result').innerText = `Dog breed is ${dog}`
+
+                        }
+                    })
+            }
+        });
+    </script>
+</body>
+
+</html>
